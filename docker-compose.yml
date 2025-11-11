@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  wordpress:
+    image: wordpress:${WP_VERSION}
+    container_name: wp-wordpress-${EXTERNAL_PORT}
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./www.deegolabs.com/wp-content:/var/www/html/wp-content
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_NAME: ${DB_NAME}
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - wp-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: wp-nginx-${EXTERNAL_PORT}
+    restart: unless-stopped
+    ports:
+      - "${EXTERNAL_PORT}:80"
+    volumes:
+      - ./devops/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - wordpress_data:/var/www/html
+      - ./www.deegolabs.com/wp-content:/var/www/html/wp-content
+    depends_on:
+      - wordpress
+    networks:
+      - wp-network
+
+  mysql:
+    image: mysql:${MYSQL_VERSION}
+    container_name: wp-mysql-${EXTERNAL_PORT}
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./devops/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - wp-network
+
+  wordpress-cli:
+    image: wordpress:cli
+    container_name: wp-cli-${EXTERNAL_PORT}
+    depends_on:
+      - wordpress
+      - mysql
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./www.deegolabs.com/wp-content:/var/www/html/wp-content
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_NAME: ${DB_NAME}
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WP_SITE_URL: ${WP_SITE_URL}
+      WP_SITE_TITLE: ${WP_SITE_TITLE}
+      WP_ADMIN_USER: ${ADMIN_EMAIL}
+      WP_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      WP_ADMIN_EMAIL: ${ADMIN_EMAIL}
+      WP_LOCALE: ${WP_LOCALE}
+      WP_TIMEZONE: ${WP_TIMEZONE}
+    networks:
+      - wp-network
+    command: >
+      /bin/sh -c "
+      sleep 15;
+      if ! wp core is-installed --path=/var/www/html --allow-root; then
+        wp core install --path=/var/www/html --url='${WP_SITE_URL}' --title='${WP_SITE_TITLE}' --admin_user='${ADMIN_EMAIL}' --admin_password='${ADMIN_PASSWORD}' --admin_email='${ADMIN_EMAIL}' --locale='${WP_LOCALE}' --allow-root;
+        wp option update timezone_string '${WP_TIMEZONE}' --path=/var/www/html --allow-root;
+        wp language core install '${WP_LOCALE}' --activate --path=/var/www/html --allow-root;
+        wp theme activate default --path=/var/www/html --allow-root;
+        wp theme delete twentytwentyfive twentytwentyfour twentytwentythree --path=/var/www/html --allow-root 2>/dev/null || true;
+        wp plugin delete akismet hello --path=/var/www/html --allow-root 2>/dev/null || true;
+        echo 'WordPress installed successfully with Korean locale, timezone and default theme';
+      else
+        echo 'WordPress is already installed';
+      fi
+      "
+
+volumes:
+  mysql_data:
+  wordpress_data:
+
+networks:
+  wp-network:
+    driver: bridge

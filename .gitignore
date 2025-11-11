@@ -1,0 +1,32 @@
+# Environment variables
+.env
+
+# WordPress uploads
+wp-content/uploads/*
+!wp-content/uploads/.gitkeep
+
+# WordPress cache
+wp-content/cache/
+
+# WordPress backups
+wp-content/backups/
+
+# WordPress upgrade
+wp-content/upgrade/
+
+# WordPress debug logs
+wp-content/debug.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+.docker/
+wp-content/themes/custom-theme/node_modules/*
