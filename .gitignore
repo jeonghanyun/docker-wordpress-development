@@ -17,6 +17,16 @@ wp-content/upgrade/
 # WordPress debug logs
 wp-content/debug.log
 
+# WordPress auto-generated files
+www.deegolabs.com/wp-content/languages/*
+www.deegolabs.com/wp-content/uploads/*
+www.deegolabs.com/wp-content/cache/*
+www.deegolabs.com/wp-content/upgrade/*
+www.deegolabs.com/wp-content/index.php
+
+# Keep theme files
+!www.deegolabs.com/wp-content/themes/
+
 # OS Files
 .DS_Store
 Thumbs.db
